@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Algorithms.FindUnion;
 using DataStructures;
 
@@ -15,27 +16,38 @@ public class BoruvkaMST : IMST
         _findUnion = new FindUnionStructure(n);
         _adj = adj;
         var resultTree = new List<Edge<int>>();
-        long cost = 0 ;
+        long cost = 0;
         bool isSingleComponent;
+        var stopwatch = new Stopwatch();
+        stopwatch.Start();
         do
         {
             Dictionary<int, Pair<Edge<int>, long>> dict = new Dictionary<int, Pair<Edge<int>, long>>();
             for(int k=0;k<n;k++) 
-                AddOrUpdate(dict, _findUnion.Find(k), FindMinimalEdgeForVertex(k));
+            {
+                var edge = FindMinimalEdgeForVertex(k);
+                if(edge is null)
+                    continue;
+                AddOrUpdate(dict, _findUnion.Find(k), edge);
+            }
+            
             foreach(var x in dict) 
             {
                 var firstIdx = _findUnion.Find(x.Value.First.First);
                 var secIdx = _findUnion.Find(x.Value.First.Second);
                 if(firstIdx == secIdx)
                     continue;
-                _findUnion.Union(x.Value.First.First, x.Value.First.Second);
+                _findUnion.Union(firstIdx, secIdx);
                 resultTree.Add(x.Value.First);
                 cost += x.Value.Second;
             }
 
             isSingleComponent = dict.Count < 2;
-        }while(isSingleComponent);
+        }while(!isSingleComponent);
+        stopwatch.Stop();
+        Console.WriteLine($"Parallel time: {stopwatch.ElapsedMilliseconds} ms");
 
+        Console.WriteLine(resultTree.Count);
         return (resultTree, cost);
     }
 
@@ -43,7 +55,10 @@ public class BoruvkaMST : IMST
     {
         var conectedNumber = _findUnion.Find(x); // for speed
         // Where() here do not slow it down
-        return FindMinimalEdge(_adj[conectedNumber].Where(x => _findUnion.Find(x.First.Second) != conectedNumber));
+        var edges = _adj[conectedNumber].Where(x => _findUnion.Find(x.First.Second) != conectedNumber);
+        if(edges is null || !edges.Any())
+            return null;
+        return FindMinimalEdge(edges);     
     }
 
     private Pair<Edge<int>, long> FindMinimalEdge(IEnumerable<Pair<Edge<int>, long>> edges) 

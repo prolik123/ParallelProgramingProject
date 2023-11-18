@@ -44,6 +44,7 @@ public class FindUnionStructure : IFindUnion // it can be generic but will be mu
                 Element = component.Element;
             else 
             {
+                Element = component.Element;
                 _rank++;
                 component._rank++;
             }

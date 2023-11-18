@@ -1,4 +1,5 @@
-﻿using Algorithms.MST;
+﻿using System.Diagnostics;
+using Algorithms.MST;
 using DataStructures;
 
 IMST mstSolver = args.Length > 1 && args[1] == "parallel" 
@@ -22,12 +23,17 @@ for(int k=0;k<m;k++)
     edges[v].Add(new Pair<Edge<int>,long>(new Edge<int>(v,u), cost));
 }
 
-// TimeStats start
+var stopwatch = new Stopwatch();
+
+stopwatch.Start();
 var result = mstSolver.GetMST(edges, n, m);
-// TimeStats end
+stopwatch.Stop();
+Console.WriteLine($"Time: {stopwatch.ElapsedMilliseconds} ms");
 
 Console.WriteLine(result.cost);
+
+/*
 foreach(var edge in result.edges) 
 {
     Console.WriteLine($"{edge.First} {edge.Second}");
-}
+}*/
