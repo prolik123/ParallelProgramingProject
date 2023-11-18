@@ -1,12 +1,12 @@
 
-using Algorithms.MST;
+using DataStructures;
 
-namespace DataStructures.MST;
+namespace Algorithms.MST;
 
 public class ParallelBoruvkaMST : IMST
 {
-    public (List<Edge<int>> edges, long cost) GetMST(List<Pair<Edge<int>, int>> adj, int n, int m)
+    public (IEnumerable<Edge<int>> edges, long cost) GetMST(IEnumerable<IEnumerable<Pair<Edge<int>, int>>> adj, int n, int m)
     {
-        throw new NotImplementedException();
+        return (new List<Edge<int>>(), 0);
     }
 }

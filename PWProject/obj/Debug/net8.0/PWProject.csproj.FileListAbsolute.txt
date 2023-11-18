@@ -12,3 +12,4 @@ C:\Users\mattti\Desktop\PW\Project\PWProject\obj\Debug\net8.0\refint\PWProject.d
 C:\Users\mattti\Desktop\PW\Project\PWProject\obj\Debug\net8.0\PWProject.pdb
 C:\Users\mattti\Desktop\PW\Project\PWProject\obj\Debug\net8.0\PWProject.genruntimeconfig.cache
 C:\Users\mattti\Desktop\PW\Project\PWProject\obj\Debug\net8.0\ref\PWProject.dll
+C:\Users\mattti\Desktop\PW\Project\PWProject\obj\Debug\net8.0\PWProject.sourcelink.json
