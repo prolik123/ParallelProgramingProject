@@ -19,20 +19,17 @@ public class ParallelBoruvkaMST : IMST
         _adj = adj;
         var resultTree = new ConcurrentBag<Edge<int>>();
         long cost = 0 ;
-        bool isSingleComponent;
         var stopwatch = new Stopwatch();
         stopwatch.Start();
-        do
+        while(true)
         {
             ConcurrentDictionary<int, Pair<Edge<int>, long>> dict = new ConcurrentDictionary<int, Pair<Edge<int>, long>>();
             Enumerable.Range(0, n).AsParallel().ForAll(k => ConsiderVertex(k, dict));
+            if(dict.Count < 2)
+                break;
             dict.AsParallel().ForAll(x => MergeComponents(x, ref cost, resultTree));
-
-            isSingleComponent = dict.Count < 2;
-        }while(!isSingleComponent);
+        }
         stopwatch.Stop();
-        Console.WriteLine($"Parallel time: {stopwatch.ElapsedMilliseconds} ms");
-        Console.WriteLine(resultTree.Count);
         return (resultTree, cost);
     }
 
@@ -47,7 +44,7 @@ public class ParallelBoruvkaMST : IMST
     {
         var conectedNumber = _findUnion.Find(x); // for speed
         // Where() here do not slow it down
-        var edges = _adj[conectedNumber].Where(x => _findUnion.Find(x.First.Second) != conectedNumber);
+        var edges = _adj[x].Where(x => _findUnion.Find(x.First.Second) != conectedNumber);
         if(edges is null || !edges.Any())
             return null;
         return FindMinimalEdge(edges);     
@@ -58,9 +55,10 @@ public class ParallelBoruvkaMST : IMST
 
     private void AddOrUpdate(ConcurrentDictionary<int, Pair<Edge<int>, long>> dict, int idx, Pair<Edge<int>, long> value)
     {
-        dict.AddOrUpdate(idx, value, (x, y) => value);
+        dict.AddOrUpdate(idx, value, (x, y) => Swapper(y, value));
     }
 
+    private Pair<Edge<int>, long> Swapper(Pair<Edge<int>, long> a, Pair<Edge<int>, long> b) => a.Second > b.Second ? b : a;
     private void MergeComponents(KeyValuePair<int, Pair<Edge<int>, long>> x, ref long cost, ConcurrentBag<Edge<int>> resultTree) 
     {
         // Tu jest problem z tym lockiem

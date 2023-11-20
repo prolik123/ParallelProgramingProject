@@ -1,0 +1,39 @@
+del sparseBig.txt
+del sparseBigTimeMultiThread.txt
+del sparseBigTimeSingleThread.txt
+del sparseMed.txt
+del sparseMedTimeMultiThread.txt
+del sparseMedTimeSingleThread.txt
+del sparseSmall.txt
+del sparseSmallTimeMultiThread.txt
+del sparseSmallTimeSingleThread.txt
+
+del midDenseBig.txt
+del midDenseBigTimeMultiThread.txt
+del midDenseBigTimeSingleThread.txt
+del midDenseMed.txt
+del midDenseMedTimeMultiThread.txt
+del midDenseMedTimeSingleThread.txt
+del midDenseSmall.txt
+del midDenseSmallTimeMultiThread.txt
+del midDenseSmallTimeSingleThread.txt
+
+del 10VBig.txt
+del 10VBigTimeMultiThread.txt
+del 10VBigTimeSingleThread.txt
+del 10VMed.txt
+del 10VMedTimeMultiThread.txt
+del 10VMedTimeSingleThread.txt
+del 10VSmall.txt
+del 10VSmallTimeMultiThread.txt
+del 10VSmallTimeSingleThread.txt
+
+del denseBig.txt
+del denseBigTimeMultiThread.txt
+del denseBigTimeSingleThread.txt
+del denseMed.txt
+del denseMedTimeMultiThread.txt
+del denseMedTimeSingleThread.txt
+del denseSmall.txt
+del denseSmallTimeMultiThread.txt
+del denseSmallTimeSingleThread.txt

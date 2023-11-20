@@ -4,8 +4,7 @@ using DataStructures;
 
 IMST mstSolver = args.Length > 1 && args[1] == "parallel" 
     ? new ParallelBoruvkaMST() 
-    : new BoruvkaMST();
-
+    : (args.Length > 1 && args[1] == "test") ? new MstTest() : new BoruvkaMST();
 var firstLine = Console.ReadLine().Split();
 int n = int.Parse(firstLine[0]);
 int m = int.Parse(firstLine[1]);
@@ -28,9 +27,9 @@ var stopwatch = new Stopwatch();
 stopwatch.Start();
 var result = mstSolver.GetMST(edges, n, m);
 stopwatch.Stop();
-Console.WriteLine($"Time: {stopwatch.ElapsedMilliseconds} ms");
+Console.Error.WriteLine($"Time: {stopwatch.ElapsedMilliseconds} ms");
 
-Console.WriteLine(result.cost);
+//Console.WriteLine(result.cost);
 
 /*
 foreach(var edge in result.edges) 

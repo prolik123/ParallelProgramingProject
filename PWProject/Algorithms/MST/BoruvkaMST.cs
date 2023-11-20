@@ -17,10 +17,9 @@ public class BoruvkaMST : IMST
         _adj = adj;
         var resultTree = new List<Edge<int>>();
         long cost = 0;
-        bool isSingleComponent;
         var stopwatch = new Stopwatch();
         stopwatch.Start();
-        do
+        while(true)
         {
             Dictionary<int, Pair<Edge<int>, long>> dict = new Dictionary<int, Pair<Edge<int>, long>>();
             for(int k=0;k<n;k++) 
@@ -30,7 +29,8 @@ public class BoruvkaMST : IMST
                     continue;
                 AddOrUpdate(dict, _findUnion.Find(k), edge);
             }
-            
+            if(dict.Count <= 1)
+                break;
             foreach(var x in dict) 
             {
                 var firstIdx = _findUnion.Find(x.Value.First.First);
@@ -41,13 +41,8 @@ public class BoruvkaMST : IMST
                 resultTree.Add(x.Value.First);
                 cost += x.Value.Second;
             }
-
-            isSingleComponent = dict.Count < 2;
-        }while(!isSingleComponent);
+        }
         stopwatch.Stop();
-        Console.WriteLine($"Parallel time: {stopwatch.ElapsedMilliseconds} ms");
-
-        Console.WriteLine(resultTree.Count);
         return (resultTree, cost);
     }
 
@@ -55,7 +50,7 @@ public class BoruvkaMST : IMST
     {
         var conectedNumber = _findUnion.Find(x); // for speed
         // Where() here do not slow it down
-        var edges = _adj[conectedNumber].Where(x => _findUnion.Find(x.First.Second) != conectedNumber);
+        var edges = _adj[x].Where(x => _findUnion.Find(x.First.Second) != conectedNumber);
         if(edges is null || !edges.Any())
             return null;
         return FindMinimalEdge(edges);     
@@ -66,8 +61,11 @@ public class BoruvkaMST : IMST
 
     private void AddOrUpdate(IDictionary<int, Pair<Edge<int>, long>> dict, int idx, Pair<Edge<int>, long> value)
     {
-        if(dict.TryGetValue(idx, out _))
-            dict[idx] = value;
+        if(dict.TryGetValue(idx, out var val))
+        {
+            if(val.Second > value.Second)
+                dict[idx] = value;
+        }
         else
             dict.Add(idx, value);
     }
