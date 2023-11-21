@@ -33,30 +33,41 @@ public class ParallelBoruvkaMST : IMST
         while(true)
         {
             isEdge = false;
-            Parallel.For(0, n, k => ConsiderVertex(k));
+            Parallel.For(0, n, ConsiderVertex);
             if(!isEdge)
                 break;
-            Parallel.For(0, n, (k) => ComposeComponent(k));
-            Parallel.For(0, n, (x) => MergeComponents(x));
+            Parallel.For(0, n, ComposeComponent);
+            Parallel.For(0, n, MergeComps);
         }
         return (resultTree, cost);
     }
 
+    private void MergeComps(int x) 
+    {
+        if(_list[x] is null)
+            return;
+        MergeComponents(x);
+        _list[x] = null;
+    }
+
     private void ComposeComponent(int k) 
     {
-        if(_findUnion.Find(k) != k)
-            return;
-        var members = _findUnion.GetMembers(k);
-        var min = k;
-        foreach(var member in members)
+        if(_findUnion.Find(k) == k) 
         {
-            if(_list[min].Second > _list[member].Second)
+            var members = _findUnion.GetMembers(k);
+            var min = k;
+            foreach(var member in members)
             {
-                _list[min] = null;
-                min = member;
+                if(_list[member] is null)
+                    continue;
+                if(_list[min] is null || _list[min].Second > _list[member].Second)
+                {
+                    _list[min] = null;
+                    min = member;
+                }
+                else if(min != member)
+                    _list[member] = null;
             }
-            else if(min != member)
-                _list[member] = null;
         }
     }
 
@@ -65,7 +76,6 @@ public class ParallelBoruvkaMST : IMST
         var edge = FindMinimalEdgeForVertex(k);
         if(edge is null)
             return;
-        isEdge = true;
         _list[k] = edge;
     }
     private Pair<Edge<int>, long> FindMinimalEdgeForVertex(int x) 
@@ -79,8 +89,9 @@ public class ParallelBoruvkaMST : IMST
                 _adj[x] = new();
             return null;
         }
+        isEdge = true;
         _adj[x] = edges;
-        return FindMinimalEdge(edges);     
+        return FindMinimalEdge(edges);    
     }
 
     private Pair<Edge<int>, long> FindMinimalEdge(IEnumerable<Pair<Edge<int>, long>> edges) 
@@ -88,20 +99,16 @@ public class ParallelBoruvkaMST : IMST
 
     private void MergeComponents(int x) 
     {
-        // Tu jest problem z tym lockiem
-        if(_list[x] is null)
-            return;
+        var pair = _list[x];
         lock(_findUnion) 
         {
-            var firstIdx = _findUnion.Find(_list[x].First.First);
-            var secIdx = _findUnion.Find(_list[x].First.Second);
+            var firstIdx = _findUnion.Find(pair.First.First);
+            var secIdx = _findUnion.Find(pair.First.Second);
             if(firstIdx == secIdx)
                 return;
-            _findUnion.Union(_list[x].First.First, _list[x].First.Second);
-            resultTree.Add(_list[x].First);
-            cost += _list[x].Second;
+            _findUnion.Union(pair.First.First, pair.First.Second);
+            resultTree.Add(pair.First);
+            cost += pair.Second;
         }
-        _list[x] = null;
     }
-    
 }

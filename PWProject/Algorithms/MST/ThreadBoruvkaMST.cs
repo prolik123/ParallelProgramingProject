@@ -74,7 +74,9 @@ public class ThreadBoruvkaMST : IMST
                     var min = k;
                     foreach(var member in members)
                     {
-                        if(_list[min].Second > _list[member].Second)
+                        if(_list[member] is null)
+                            continue;
+                        if(_list[min] is null || _list[min].Second > _list[member].Second)
                         {
                             _list[min] = null;
                             min = member;

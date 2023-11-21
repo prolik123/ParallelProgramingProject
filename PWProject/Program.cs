@@ -28,6 +28,7 @@ if(args.Length > 1)
         "parallel" => new ParallelBoruvkaMST(edges, n),
         "test" => new MstTest(edges, n),
         "threads" => new ThreadBoruvkaMST(edges, n),
+        "fast" => new FastBoruvkaMST(edges, n),
         _ =>  new BoruvkaMST(edges, n)
     };
 }
