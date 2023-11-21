@@ -8,13 +8,19 @@ public class BoruvkaMST : IMST
 {
     private IFindUnion _findUnion;
     private List<List<Pair<Edge<int>, long>>> _adj;
+    private int n;
 
-    public (IEnumerable<Edge<int>> edges, long cost) GetMST(List<List<Pair<Edge<int>, long>>> adj, int n, int m)
+    public BoruvkaMST(List<List<Pair<Edge<int>, long>>> adj, int n) 
+    {
+        _adj = adj;
+        this.n = n;
+        _findUnion = new FindUnionStructure(n);
+    }
+
+    public (IEnumerable<Edge<int>> edges, long cost) GetMST()
     {
         if(n < 2)
             return (Enumerable.Empty<Edge<int>>(), 0);
-        _findUnion = new FindUnionStructure(n);
-        _adj = adj;
         var resultTree = new List<Edge<int>>();
         long cost = 0;
         var stopwatch = new Stopwatch();
@@ -50,7 +56,8 @@ public class BoruvkaMST : IMST
     {
         var conectedNumber = _findUnion.Find(x); // for speed
         // Where() here do not slow it down
-        var edges = _adj[x].Where(x => _findUnion.Find(x.First.Second) != conectedNumber);
+        var edges = _adj[x].Where(x => _findUnion.Find(x.First.Second) != conectedNumber).ToList();
+        _adj[x] = edges;
         if(edges is null || !edges.Any())
             return null;
         return FindMinimalEdge(edges);     

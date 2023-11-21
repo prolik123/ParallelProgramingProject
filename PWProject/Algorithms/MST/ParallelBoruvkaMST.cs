@@ -10,13 +10,19 @@ public class ParallelBoruvkaMST : IMST
 {
     private IFindUnion _findUnion;
     private List<List<Pair<Edge<int>, long>>> _adj;
+    private int n;
 
-    public (IEnumerable<Edge<int>> edges, long cost) GetMST(List<List<Pair<Edge<int>, long>>> adj, int n, int m)
+    public ParallelBoruvkaMST(List<List<Pair<Edge<int>, long>>> adj, int n) 
+    {
+        _adj = adj;
+        this.n = n;
+        _findUnion = new FindUnionStructure(n);
+    }
+
+    public (IEnumerable<Edge<int>> edges, long cost) GetMST()
     {
         if(n < 2)
             return (Enumerable.Empty<Edge<int>>(), 0);
-        _findUnion = new FindUnionStructure(n);
-        _adj = adj;
         var resultTree = new ConcurrentBag<Edge<int>>();
         long cost = 0 ;
         var stopwatch = new Stopwatch();
@@ -24,7 +30,7 @@ public class ParallelBoruvkaMST : IMST
         while(true)
         {
             ConcurrentDictionary<int, Pair<Edge<int>, long>> dict = new ConcurrentDictionary<int, Pair<Edge<int>, long>>();
-            Enumerable.Range(0, n).AsParallel().ForAll(k => ConsiderVertex(k, dict));
+            Parallel.For(0, n, k => ConsiderVertex(k, dict));
             if(dict.Count < 2)
                 break;
             dict.AsParallel().ForAll(x => MergeComponents(x, ref cost, resultTree));
@@ -44,9 +50,10 @@ public class ParallelBoruvkaMST : IMST
     {
         var conectedNumber = _findUnion.Find(x); // for speed
         // Where() here do not slow it down
-        var edges = _adj[x].Where(x => _findUnion.Find(x.First.Second) != conectedNumber);
+        var edges = _adj[x].Where(x => _findUnion.Find(x.First.Second) != conectedNumber).ToList();
         if(edges is null || !edges.Any())
             return null;
+        _adj[x] = edges;
         return FindMinimalEdge(edges);     
     }
 

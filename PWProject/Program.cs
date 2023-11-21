@@ -2,9 +2,6 @@
 using Algorithms.MST;
 using DataStructures;
 
-IMST mstSolver = args.Length > 1 && args[1] == "parallel" 
-    ? new ParallelBoruvkaMST() 
-    : (args.Length > 1 && args[1] == "test") ? new MstTest() : new BoruvkaMST();
 var firstLine = Console.ReadLine().Split();
 int n = int.Parse(firstLine[0]);
 int m = int.Parse(firstLine[1]);
@@ -22,17 +19,34 @@ for(int k=0;k<m;k++)
     edges[v].Add(new Pair<Edge<int>,long>(new Edge<int>(v,u), cost));
 }
 
+IMST mstSolver;
+
+if(args.Length > 1) 
+{
+    mstSolver = args[1] switch 
+    {
+        "parallel" => new ParallelBoruvkaMST(edges, n),
+        "test" => new MstTest(edges, n),
+        "threads" => new ThreadBoruvkaMST(edges, n),
+        _ =>  new BoruvkaMST(edges, n)
+    };
+}
+else
+    mstSolver = new BoruvkaMST(edges, n);
+//mstSolver = new ThreadBoruvkaMST(edges, n);
+
 var stopwatch = new Stopwatch();
 
 stopwatch.Start();
-var result = mstSolver.GetMST(edges, n, m);
+var result = mstSolver.GetMST();
 stopwatch.Stop();
 Console.Error.WriteLine($"Time: {stopwatch.ElapsedMilliseconds} ms");
 
-//Console.WriteLine(result.cost);
+Console.WriteLine(result.cost);
 
 /*
 foreach(var edge in result.edges) 
 {
     Console.WriteLine($"{edge.First} {edge.Second}");
-}*/
+}
+*/

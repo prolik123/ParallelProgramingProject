@@ -9,6 +9,17 @@ build.bat
 ``` 
 PWProject.exe -- parallel 
 ```
+for thread pool version
+
+* To run project on simple threads type
+```
+PWProject.exe -- threads
+```
+
+## Run Test Generator
+```
+TestsGenerator.exe -- FileName.txt MIN_N MAX_N MIN_M MAX_M MAX_COST
+```
 
 ## Testing
 * To run test you can type:
