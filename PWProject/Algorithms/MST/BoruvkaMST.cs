@@ -58,8 +58,12 @@ public class BoruvkaMST : IMST
         // Where() here do not slow it down
         var edges = _adj[x].Where(x => _findUnion.Find(x.First.Second) != conectedNumber).ToList();
         _adj[x] = edges;
-        if(edges is null || !edges.Any())
+        if(edges is null || !edges.Any()) 
+        {
+            if(_adj[x].Any())
+                _adj[x] = new();
             return null;
+        }
         return FindMinimalEdge(edges);     
     }
 

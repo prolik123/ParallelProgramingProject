@@ -33,8 +33,6 @@ if(args.Length > 1)
 }
 else
     mstSolver = new BoruvkaMST(edges, n);
-//mstSolver = new ThreadBoruvkaMST(edges, n);
-
 var stopwatch = new Stopwatch();
 
 stopwatch.Start();

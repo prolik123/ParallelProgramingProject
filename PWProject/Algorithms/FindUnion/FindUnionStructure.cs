@@ -2,7 +2,6 @@
 namespace Algorithms.FindUnion;
 
 // find union in O(n*a(n)) time where a(n) is inverse ackermann function
-// implementation of boruvka on start FindUnion is slower than normal + ConcurrentDictionary
 
 public class FindUnionStructure : IFindUnion // it can be generic but will be much slower in this case
 {

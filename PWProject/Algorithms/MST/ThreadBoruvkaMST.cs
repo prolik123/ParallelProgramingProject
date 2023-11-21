@@ -1,7 +1,6 @@
 
 using DataStructures;
 using Algorithms.FindUnion;
-using System.Collections.Concurrent;
 using System.Diagnostics;
 
 namespace Algorithms.MST;
@@ -9,11 +8,11 @@ namespace Algorithms.MST;
 public class ThreadBoruvkaMST : IMST
 {
     private const int THREAD_NUM = 16;
-    private IFindUnion _findUnion;
+    private StarFindUnion _findUnion;
     private List<List<Pair<Edge<int>, long>>> _adj;
     private List<Pair<Edge<int>, long>> _list;
 
-    private ConcurrentBag<Edge<int>> resultTree;
+    private List<Edge<int>> resultTree;
     private int n;
     private bool success;
     private bool isEdge;
@@ -23,7 +22,7 @@ public class ThreadBoruvkaMST : IMST
     {
         _adj = adj;
         this.n = n;
-        _findUnion = new FindUnionStructure(n);
+        _findUnion = new StarFindUnion(n);
         _adj = adj;
     }
 
@@ -32,7 +31,7 @@ public class ThreadBoruvkaMST : IMST
         if(n < 2)
             return (Enumerable.Empty<Edge<int>>(), 0);
         success = false;
-        resultTree = new ConcurrentBag<Edge<int>>();
+        resultTree = new List<Edge<int>>();
         cost = 0 ;
         _list = new List<Pair<Edge<int>, long>>();
         for(int k=0;k<n;k++)
@@ -43,10 +42,11 @@ public class ThreadBoruvkaMST : IMST
         Thread[] threads = new Thread[THREAD_NUM];
         Barrier inBarrier = new Barrier(THREAD_NUM, (e) => isEdge = false);
         Barrier outBarrier = new Barrier(THREAD_NUM, (b) => success = !isEdge);
+        Barrier midBarrier = new Barrier(THREAD_NUM);
         for(int k=0;k<THREAD_NUM;k++) 
         {
             int specInt = k;
-            threads[k] = new Thread(() => ThreadFunction(specInt, inBarrier, outBarrier));
+            threads[k] = new Thread(() => ThreadFunction(specInt, inBarrier, outBarrier, midBarrier));
         }
         foreach (var thread in threads)
             thread.Start();
@@ -56,7 +56,7 @@ public class ThreadBoruvkaMST : IMST
         return (resultTree, cost);
     }
 
-    private void ThreadFunction(int threadId, Barrier inBar, Barrier outBar) 
+    private void ThreadFunction(int threadId, Barrier inBar, Barrier outBar, Barrier midBar) 
     {
         while(true)
         {
@@ -68,10 +68,29 @@ public class ThreadBoruvkaMST : IMST
                 break;
             for(int k=threadId;k<n;k+=THREAD_NUM) 
             {
-                if(_list[k].First.First == -1)
+                if(_findUnion.Find(k) == k) 
+                {
+                    var members = _findUnion.GetMembers(k);
+                    var min = k;
+                    foreach(var member in members)
+                    {
+                        if(_list[min].Second > _list[member].Second)
+                        {
+                            _list[min] = null;
+                            min = member;
+                        }
+                        else if(min != member)
+                            _list[member] = null;
+                    }
+                }
+            }
+            midBar.SignalAndWait();
+            for(int k=threadId;k<n;k+=THREAD_NUM) 
+            {
+                if(_list[k] is null)
                     continue;
                 MergeComponents(_list[k]);
-                _list[k] = new Pair<Edge<int>, long>(new Edge<int>(-1,-1),-1);
+                _list[k] = null;
             }
         }
     }
@@ -81,20 +100,19 @@ public class ThreadBoruvkaMST : IMST
         var edge = FindMinimalEdgeForVertex(k);
         if(edge is null)
             return;
-        var conectedNumber = _findUnion.Find(k);
-        lock(_list[conectedNumber]) 
-        {
-            if(_list[conectedNumber].First.First == -1 || _list[conectedNumber].Second > edge.Second)
-                _list[conectedNumber] = edge;
-        }
+        _list[k] = edge;
     }
     private Pair<Edge<int>, long> FindMinimalEdgeForVertex(int x) 
     {
         var conectedNumber = _findUnion.Find(x); // for speed
         // Where() here do not slow it down
         var edges = _adj[x].Where(x => _findUnion.Find(x.First.Second) != conectedNumber).ToList();
-        if(edges is null || !edges.Any())
+        if(edges is null || !edges.Any()) 
+        {
+            if(_adj[x].Any())
+                _adj[x] = new();
             return null;
+        }
         isEdge = true;
         _adj[x] = edges;
         return FindMinimalEdge(edges);     
@@ -103,10 +121,9 @@ public class ThreadBoruvkaMST : IMST
     private Pair<Edge<int>, long> FindMinimalEdge(IEnumerable<Pair<Edge<int>, long>> edges) 
         => edges.Aggregate((prev, next) => prev.Second > next.Second ? next : prev);
 
-    private Pair<Edge<int>, long> Swapper(Pair<Edge<int>, long> a, Pair<Edge<int>, long> b) => a.Second > b.Second ? b : a;
     private void MergeComponents(Pair<Edge<int>, long> x) 
     {
-        // Tu jest problem z tym lockiem
+        // Tu jest problem z tym lockiem ale nie moge znalesc zadnego opisu bez compare exchange albo locka
         lock(_findUnion) 
         {
             var firstIdx = _findUnion.Find(x.First.First);
@@ -114,9 +131,9 @@ public class ThreadBoruvkaMST : IMST
             if(firstIdx == secIdx)
                 return;
             _findUnion.Union(x.First.First, x.First.Second);
+            resultTree.Add(x.First);
+            cost += x.Second;
         }
-        resultTree.Add(x.First);
-        Interlocked.Add(ref cost, x.Second);
     }
     
 }
