@@ -1,1 +1,5 @@
-Time: 33 ms
+Time: 22 ms for 1 threads
+Time: 15 ms for 2 threads
+Time: 14 ms for 4 threads
+Time: 14 ms for 8 threads
+Time: 14 ms for 16 threads

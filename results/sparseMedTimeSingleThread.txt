@@ -1,1 +1,5 @@
-Time: 16364 ms
+Time: 5344 ms for 1 threads
+Time: 5902 ms for 2 threads
+Time: 5983 ms for 4 threads
+Time: 5903 ms for 8 threads
+Time: 5980 ms for 16 threads
