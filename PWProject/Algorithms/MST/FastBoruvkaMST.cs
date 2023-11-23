@@ -14,7 +14,7 @@ public class FastBoruvkaMST : IMST
 
     public FastBoruvkaMST(List<List<Pair<Edge<int>, long>>> adj, int n) 
     {
-        _adj = adj;
+        _adj = new (adj);
         this.n = n;
         _findUnion = new FindUnionStructure(n);
     }

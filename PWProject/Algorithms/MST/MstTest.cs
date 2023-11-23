@@ -10,7 +10,7 @@ public class MstTest : IMST
     public MstTest(List<List<Pair<Edge<int>, long>>> adj, int n) 
     {
         this.n = n;
-        _adj = adj;
+        _adj = new (adj);
     }
 
     public (IEnumerable<Edge<int>> edges, long cost) GetMST()

@@ -7,7 +7,7 @@ namespace Algorithms.MST;
 
 public class ThreadBoruvkaMST : IMST
 {
-    private const int THREAD_NUM = 16;
+    private readonly int THREAD_NUM;
     private StarFindUnion _findUnion;
     private List<List<Pair<Edge<int>, long>>> _adj;
     private List<Pair<Edge<int>, long>> _list;
@@ -18,12 +18,12 @@ public class ThreadBoruvkaMST : IMST
     private bool isEdge;
     private long cost;
 
-    public ThreadBoruvkaMST(List<List<Pair<Edge<int>, long>>> adj, int n) 
+    public ThreadBoruvkaMST(List<List<Pair<Edge<int>, long>>> adj, int n, int threadNum) 
     {
-        _adj = adj;
+        _adj = new (adj);
         this.n = n;
         _findUnion = new StarFindUnion(n);
-        _adj = adj;
+        THREAD_NUM = threadNum;
     }
 
     public (IEnumerable<Edge<int>> edges, long cost) GetMST()

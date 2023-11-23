@@ -16,7 +16,7 @@ public class ParallelBoruvkaMST : IMST
 
     public ParallelBoruvkaMST(List<List<Pair<Edge<int>, long>>> adj, int n) 
     {
-        _adj = adj;
+        _adj = new (adj);
         this.n = n;
     }
 
