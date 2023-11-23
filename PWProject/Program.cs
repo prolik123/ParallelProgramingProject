@@ -18,7 +18,7 @@ for(int k=0;k<m;k++)
     edges[u].Add(new Pair<Edge<int>,long>(new Edge<int>(u,v), cost));
     edges[v].Add(new Pair<Edge<int>,long>(new Edge<int>(v,u), cost));
 }
-ThreadPool.SetMinThreads(1, 0);
+var ok = ThreadPool.SetMinThreads(1, 1);
 
 for(int k=0;k<5;k++) {
     IMST mstSolver;
@@ -36,8 +36,8 @@ for(int k=0;k<5;k++) {
     }
     else
         mstSolver = new BoruvkaMST(edges, n);
-    ThreadPool.SetMaxThreads(1 << k, 0);
-    ThreadPool.SetMinThreads(1 << k, 0);
+    var maxOk =ThreadPool.SetMaxThreads(1 << k, 1 << k);
+    var minOk = ThreadPool.SetMinThreads(1 << k, 1 << k);
     var stopwatch = new Stopwatch();
 
     stopwatch.Start();
