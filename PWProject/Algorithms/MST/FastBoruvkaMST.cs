@@ -11,12 +11,14 @@ public class FastBoruvkaMST : IMST
     private IFindUnion _findUnion;
     private List<List<Pair<Edge<int>, long>>> _adj;
     private int n;
+    private int MAX_THREADS;
 
-    public FastBoruvkaMST(List<List<Pair<Edge<int>, long>>> adj, int n) 
+    public FastBoruvkaMST(List<List<Pair<Edge<int>, long>>> adj, int n, int threads) 
     {
         _adj = new (adj);
         this.n = n;
         _findUnion = new FindUnionStructure(n);
+        MAX_THREADS = threads;
     }
 
     public (IEnumerable<Edge<int>> edges, long cost) GetMST()
@@ -30,7 +32,7 @@ public class FastBoruvkaMST : IMST
         while(true)
         {
             ConcurrentDictionary<int, Pair<Edge<int>, long>> dict = new ConcurrentDictionary<int, Pair<Edge<int>, long>>();
-            Parallel.For(0, n, k => ConsiderVertex(k, dict));
+            Parallel.For(0, n, new ParallelOptions { MaxDegreeOfParallelism = MAX_THREADS}, k => ConsiderVertex(k, dict));
             if(dict.Count < 2)
                 break;
             dict.AsParallel().ForAll(x => MergeComponents(x, ref cost, resultTree));

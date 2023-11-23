@@ -27,10 +27,10 @@ for(int k=0;k<5;k++) {
     {
         mstSolver = args[1] switch 
         {
-            "parallel" => new ParallelBoruvkaMST(edges, n),
+            "parallel" => new ParallelBoruvkaMST(edges, n, 1 << k),
             "test" => new MstTest(edges, n),
             "threads" => new ThreadBoruvkaMST(edges, n, 1 << k),
-            "fast" => new FastBoruvkaMST(edges, n),
+            "fast" => new FastBoruvkaMST(edges, n, 1 << k),
             _ =>  new BoruvkaMST(edges, n)
         };
     }

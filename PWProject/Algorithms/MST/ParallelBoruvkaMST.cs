@@ -14,10 +14,13 @@ public class ParallelBoruvkaMST : IMST
     private long cost;
     private bool isEdge;
 
-    public ParallelBoruvkaMST(List<List<Pair<Edge<int>, long>>> adj, int n) 
+    private int MAX_THREADS;
+
+    public ParallelBoruvkaMST(List<List<Pair<Edge<int>, long>>> adj, int n, int threads) 
     {
         _adj = new (adj);
         this.n = n;
+        MAX_THREADS = threads;
     }
 
     public (IEnumerable<Edge<int>> edges, long cost) GetMST()
@@ -33,11 +36,11 @@ public class ParallelBoruvkaMST : IMST
         while(true)
         {
             isEdge = false;
-            Parallel.For(0, n, ConsiderVertex);
+            Parallel.For(0, n, new ParallelOptions { MaxDegreeOfParallelism = MAX_THREADS}, ConsiderVertex);
             if(!isEdge)
                 break;
-            Parallel.For(0, n, ComposeComponent);
-            Parallel.For(0, n, MergeComps);
+            Parallel.For(0, n, new ParallelOptions { MaxDegreeOfParallelism = MAX_THREADS}, ComposeComponent);
+            Parallel.For(0, n, new ParallelOptions { MaxDegreeOfParallelism = MAX_THREADS}, MergeComps);
         }
         return (resultTree, cost);
     }
