@@ -3,7 +3,7 @@ namespace Algorithms.FindUnion;
 
 // find union in O(n*a(n)) time where a(n) is inverse ackermann function
 
-public class FindUnionStructure : IFindUnion // it can be generic but will be much slower in this case
+public class FindUnionStructure : IFindUnion
 {
     private Component[] _list;
 
@@ -27,27 +27,27 @@ public class FindUnionStructure : IFindUnion // it can be generic but will be mu
     private class Component 
     {
         public int Element { get; set; }
-        private int _rank { get; set; }
+        private int rank { get; set; }
 
         public Component(int element) 
         {
             Element = element;
-            _rank = 1;
+            rank = 0;
         }
 
         public void MergeWith(Component component) 
         {
             if(Element == component.Element)
                 return;
-            if(_rank > component._rank)
+            if(rank > component.rank)
                 component.Element = Element;
-            else if(_rank < component._rank)
+            else if(rank < component.rank)
                 Element = component.Element;
             else 
             {
                 Element = component.Element;
-                _rank++;
-                component._rank++;
+                rank++;
+                component.rank++;
             }
         }
     }
