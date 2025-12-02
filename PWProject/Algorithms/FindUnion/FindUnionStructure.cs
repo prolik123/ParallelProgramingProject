@@ -1,6 +1,4 @@
  
-using System.Linq;
-
 namespace PWProject.Algorithms.FindUnion;
 
 // find union in O(n*a(n)) time where a(n) is inverse ackermann function

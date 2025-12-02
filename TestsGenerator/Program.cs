@@ -1,7 +1,4 @@
-﻿using System;
-using System.IO;
-using System.Linq;
-using TestsGenerator;
+﻿using TestsGenerator;
 
 var rand = new Random();
 var fileName = args[1];

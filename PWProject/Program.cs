@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Threading;
+﻿using System.Diagnostics;
 using PWProject.Algorithms.MST;
 using PWProject.DataStructures;
 

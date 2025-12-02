@@ -1,2 +1,6 @@
 .vscode
 .idea
+PWProject/bin
+PWProject/obj
+TestsGenerator/bin
+TestsGenerator/obj
