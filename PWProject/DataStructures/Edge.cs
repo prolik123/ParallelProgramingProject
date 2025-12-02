@@ -1,10 +1,4 @@
 
-namespace DataStructures;
+namespace PWProject.DataStructures;
 
-public class Edge<T> : Pair<T, T>
-{
-    public Edge(T first, T second){
-        First = first;
-        Second = second;
-    }
-}
+public record Edge<T>(T First, T Second) : Pair<T, T>(First, Second);

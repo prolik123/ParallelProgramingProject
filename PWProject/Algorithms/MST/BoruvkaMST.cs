@@ -1,42 +1,46 @@
-using System.Diagnostics;
-using Algorithms.FindUnion;
-using DataStructures;
+using System.Collections.Generic;
+using System.Linq;
+using PWProject.Algorithms.FindUnion;
+using PWProject.DataStructures;
 
-namespace Algorithms.MST;
+namespace PWProject.Algorithms.MST;
 
 public class BoruvkaMST : IMST
 {
-    private IFindUnion _findUnion;
-    private List<List<Pair<Edge<int>, long>>> _adj;
-    private int n;
+    private readonly IFindUnion _findUnion;
 
-    public BoruvkaMST(List<List<Pair<Edge<int>, long>>> adj, int n) 
+    public BoruvkaMST(int n) 
     {
-        _adj = new (adj);
-        this.n = n;
         _findUnion = new FindUnionStructure(n);
     }
 
-    public (IEnumerable<Edge<int>> edges, long cost) GetMST()
+    public BoruvkaMST(IFindUnion findUnion)
     {
+        _findUnion = findUnion;
+    }
+
+    public (IEnumerable<Edge<int>> edges, long cost) GetMST(List<List<Pair<Edge<int>, long>>> adjparam, int n)
+    {
+        var adj = new List<List<Pair<Edge<int>, long>>>(adjparam);
         if(n < 2)
-            return (Enumerable.Empty<Edge<int>>(), 0);
+            return ([], 0);
+        
         var resultTree = new List<Edge<int>>();
         long cost = 0;
-        var stopwatch = new Stopwatch();
-        stopwatch.Start();
         while(true)
         {
-            Dictionary<int, Pair<Edge<int>, long>> dict = new Dictionary<int, Pair<Edge<int>, long>>();
-            for(int k=0;k<n;k++) 
+            var dict = new Dictionary<int, Pair<Edge<int>, long>>();
+            for (var k = 0; k < n; k++) 
             {
-                var edge = FindMinimalEdgeForVertex(k);
+                var edge = FindMinimalEdgeForVertex(adj, k);
                 if(edge is null)
                     continue;
                 AddOrUpdate(dict, _findUnion.Find(k), edge);
             }
+            
             if(dict.Count <= 1)
                 break;
+            
             foreach(var x in dict) 
             {
                 var firstIdx = _findUnion.Find(x.Value.First.First);
@@ -48,29 +52,26 @@ public class BoruvkaMST : IMST
                 cost += x.Value.Second;
             }
         }
-        stopwatch.Stop();
         return (resultTree, cost);
     }
 
-    private Pair<Edge<int>, long> FindMinimalEdgeForVertex(int x) 
+    private Pair<Edge<int>, long> FindMinimalEdgeForVertex(List<List<Pair<Edge<int>, long>>> adj, int x) 
     {
-        var conectedNumber = _findUnion.Find(x); // for speed
-        // Where() here do not slow it down
-        var edges = _adj[x].Where(x => _findUnion.Find(x.First.Second) != conectedNumber).ToList();
-        _adj[x] = edges;
-        if(edges is null || !edges.Any()) 
-        {
-            if(_adj[x].Any())
-                _adj[x] = new();
-            return null;
-        }
-        return FindMinimalEdge(edges);     
+        var connectedNumber = _findUnion.Find(x);
+        var edges = adj[x].Where(it => _findUnion.Find(it.First.Second) != connectedNumber).ToList();
+        adj[x] = edges;
+        if (edges.Count != 0) 
+            return FindMinimalEdge(edges);
+        
+        if(adj[x].Count != 0)
+            adj[x] = [];
+        return null;
     }
 
-    private Pair<Edge<int>, long> FindMinimalEdge(IEnumerable<Pair<Edge<int>, long>> edges) 
+    private static Pair<Edge<int>, long> FindMinimalEdge(IEnumerable<Pair<Edge<int>, long>> edges) 
         => edges.Aggregate((prev, next) => prev.Second > next.Second ? next : prev);
 
-    private void AddOrUpdate(IDictionary<int, Pair<Edge<int>, long>> dict, int idx, Pair<Edge<int>, long> value)
+    private static void AddOrUpdate(IDictionary<int, Pair<Edge<int>, long>> dict, int idx, Pair<Edge<int>, long> value)
     {
         if(dict.TryGetValue(idx, out var val))
         {

@@ -1,37 +1,39 @@
 
-using DataStructures;
+using System.Collections.Generic;
+using PWProject.DataStructures;
 
-namespace Algorithms.MST;
+namespace PWProject.Algorithms.MST;
 
 public class MstTest : IMST
 {
-    private int n;
-    private List<List<Pair<Edge<int>, long>>> _adj;
-    public MstTest(List<List<Pair<Edge<int>, long>>> adj, int n) 
-    {
-        this.n = n;
-        _adj = new (adj);
-    }
 
-    public (IEnumerable<Edge<int>> edges, long cost) GetMST()
+    public (IEnumerable<Edge<int>> edges, long cost) GetMST(List<List<Pair<Edge<int>, long>>> adjParam, int n)
     {
+        var adj = new List<List<Pair<Edge<int>, long>>>(adjParam);
         var visited = new bool[n];
-        for(int k=0;k<n;k++)
+        for (var k = 0; k < n; k++)
             visited[k] = false;
         var queue = new PriorityQueue<Edge<int>, long>();
-        _adj[0].ForEach(x => queue.Enqueue(x.First, x.Second));
+        
+        adj[0].ForEach(x => queue.Enqueue(x.First, x.Second));
         visited[0] = true;
         long cost = 0;
-        int numOfVisited = 1;
-        while(numOfVisited != n) {
+        var result = new List<Edge<int>>();
+        var numOfVisited = 1;
+        
+        while(numOfVisited != n) 
+        {
             var element = queue.Dequeue();
             if(visited[element.Second])
                 continue;
+            
+            result.Add(element);
             numOfVisited++;
             visited[element.Second] = true;
-            cost += _adj[element.First].Find(x => x.First.Second == element.Second).Second;
-            _adj[element.Second].ForEach(x => queue.Enqueue(x.First, x.Second));
+            cost += adj[element.First].Find(x => x.First.Second == element.Second).Second;
+            adj[element.Second].ForEach(x => queue.Enqueue(x.First, x.Second));
         }
-        return (null, cost);
+        
+        return (result, cost);
     }
 }

@@ -1,108 +1,118 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using PWProject.Algorithms.FindUnion;
+using PWProject.DataStructures;
 
-using DataStructures;
-using Algorithms.FindUnion;
-
-namespace Algorithms.MST;
+namespace PWProject.Algorithms.MST;
 
 public class ParallelBoruvkaMST : IMST
 {
-    private StarFindUnion _findUnion;
-    private List<List<Pair<Edge<int>, long>>> _adj;
-    private int n;
-    private List<Pair<Edge<int>, long>> _list;
-    private List<Edge<int>> resultTree;
-    private long cost;
-    private bool isEdge;
+    private readonly StarFindUnion _findUnion;
 
-    private int MAX_THREADS;
+    private readonly int _maxThreads;
 
-    public ParallelBoruvkaMST(List<List<Pair<Edge<int>, long>>> adj, int n, int threads) 
+    public ParallelBoruvkaMST(int maxThreads, int n) 
     {
-        _adj = new (adj);
-        this.n = n;
-        MAX_THREADS = threads;
+        _findUnion = new StarFindUnion(n);
+        _maxThreads = maxThreads;
     }
 
-    public (IEnumerable<Edge<int>> edges, long cost) GetMST()
+    public ParallelBoruvkaMST(StarFindUnion findUnion, int maxThreads)
+    {
+        _findUnion = findUnion ?? throw new ArgumentNullException(nameof(findUnion));
+        _maxThreads = maxThreads;
+    }
+
+    public (IEnumerable<Edge<int>> edges, long cost) GetMST(List<List<Pair<Edge<int>, long>>> adjParam, int n)
     {
         if(n < 2)
-            return (Enumerable.Empty<Edge<int>>(), 0);
-        resultTree = new List<Edge<int>>();
-        _findUnion = new StarFindUnion(n);
-        _list = new List<Pair<Edge<int>, long>>();
-        for(int k=0;k<n;k++)
-            _list.Add(null);
-        cost = 0;
+            return ([], 0);
+        
+        var adj = new  List<List<Pair<Edge<int>, long>>>(adjParam);
+        List<Edge<int>> resultTree = [];
+        
+        List<Pair<Edge<int>, long>> list = [];
+        for (var k = 0; k < n; k++)
+            list.Add(null);
+        
+        long cost = 0;
         while(true)
         {
-            isEdge = false;
-            Parallel.For(0, n, new ParallelOptions { MaxDegreeOfParallelism = MAX_THREADS}, ConsiderVertex);
+            var parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = _maxThreads };
+            var isEdge = false;
+            Parallel.For(0, n, parallelOptions, (x) => ConsiderVertex(adj, list, x, ref isEdge));
             if(!isEdge)
                 break;
-            Parallel.For(0, n, new ParallelOptions { MaxDegreeOfParallelism = MAX_THREADS}, ComposeComponent);
-            Parallel.For(0, n, new ParallelOptions { MaxDegreeOfParallelism = MAX_THREADS}, MergeComps);
+            
+            Parallel.For(0, n, parallelOptions, (x) => ComposeComponent(list, x));
+            Parallel.For(0, n, parallelOptions, (x) => MergeComps(resultTree, list, x, ref cost));
         }
         return (resultTree, cost);
     }
 
-    private void MergeComps(int x) 
+    private void MergeComps(List<Edge<int>> resultTree, List<Pair<Edge<int>, long>> list, int x, ref long cost) 
     {
-        if(_list[x] is null)
+        if(list[x] is null)
             return;
-        MergeComponents(x);
-        _list[x] = null;
+        
+        MergeComponents(resultTree, list, x, ref cost);
+        list[x] = null;
     }
 
-    private void ComposeComponent(int k) 
+    private void ComposeComponent(List<Pair<Edge<int>, long>> list, int k)
     {
-        if(_findUnion.Find(k) == k) 
+        if (_findUnion.Find(k) != k) 
+            return;
+        
+        var members = _findUnion.GetMembers(k);
+        var min = k;
+        foreach (var member in members.Where(member => list[member] is not null))
         {
-            var members = _findUnion.GetMembers(k);
-            var min = k;
-            foreach(var member in members)
+            if(list[min] is null || list[min].Second > list[member].Second)
             {
-                if(_list[member] is null)
-                    continue;
-                if(_list[min] is null || _list[min].Second > _list[member].Second)
-                {
-                    _list[min] = null;
-                    min = member;
-                }
-                else if(min != member)
-                    _list[member] = null;
+                list[min] = null;
+                min = member;
             }
+            else if(min != member)
+                list[member] = null;
         }
     }
 
-    private void ConsiderVertex(int k) 
+    private void ConsiderVertex(List<List<Pair<Edge<int>, long>>> adj, List<Pair<Edge<int>, long>> list, int k, ref bool isEdge) 
     {
-        var edge = FindMinimalEdgeForVertex(k);
+        var edge = FindMinimalEdgeForVertex(adj, k, ref isEdge);
         if(edge is null)
             return;
-        _list[k] = edge;
+        
+        list[k] = edge;
     }
-    private Pair<Edge<int>, long> FindMinimalEdgeForVertex(int x) 
+    private Pair<Edge<int>, long> FindMinimalEdgeForVertex(List<List<Pair<Edge<int>, long>>> adj, int x, ref bool isEdge) 
     {
-        var conectedNumber = _findUnion.Find(x); // for speed
-        // Where() here do not slow it down
-        var edges = _adj[x].Where(x => _findUnion.Find(x.First.Second) != conectedNumber).ToList();
-        if(edges is null || !edges.Any()) 
+        var connectedNumber = _findUnion.Find(x);
+        var edges = adj[x]
+            .Where(it => _findUnion.Find(it.First.Second) != connectedNumber)
+            .ToList();
+        
+        if(edges.Count == 0) 
         {
-            if(_adj[x].Any())
-                _adj[x] = new();
+            if(adj[x].Count != 0)
+                adj[x] = [];
             return null;
         }
+        
         isEdge = true;
-        _adj[x] = edges;
+        adj[x] = edges;
         return FindMinimalEdge(edges);    
     }
 
-    private Pair<Edge<int>, long> FindMinimalEdge(IEnumerable<Pair<Edge<int>, long>> edges) 
+    private static Pair<Edge<int>, long> FindMinimalEdge(IEnumerable<Pair<Edge<int>, long>> edges) 
         => edges.Aggregate((prev, next) => prev.Second > next.Second ? next : prev);
 
-    private void MergeComponents(int x) 
+    private void MergeComponents(List<Edge<int>> resultTree, List<Pair<Edge<int>, long>> list, int x, ref long cost) 
     {
-        var pair = _list[x];
+        var pair = list[x];
         lock(_findUnion) 
         {
             var firstIdx = _findUnion.Find(pair.First.First);

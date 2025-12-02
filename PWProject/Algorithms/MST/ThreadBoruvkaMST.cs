@@ -1,131 +1,141 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using PWProject.Algorithms.FindUnion;
+using PWProject.DataStructures;
 
-using DataStructures;
-using Algorithms.FindUnion;
-using System.Diagnostics;
-
-namespace Algorithms.MST;
+namespace PWProject.Algorithms.MST;
 
 public class ThreadBoruvkaMST : IMST
 {
-    private readonly int THREAD_NUM;
-    private StarFindUnion _findUnion;
-    private List<List<Pair<Edge<int>, long>>> _adj;
-    private List<Pair<Edge<int>, long>> _list;
+    private readonly int _threadNum;
+    private readonly StarFindUnion _findUnion;
 
-    private List<Edge<int>> resultTree;
-    private int n;
-    private bool success;
-    private bool isEdge;
-    private long cost;
-
-    public ThreadBoruvkaMST(List<List<Pair<Edge<int>, long>>> adj, int n, int threadNum) 
+    public ThreadBoruvkaMST(int n, int threadNum) 
     {
-        _adj = new (adj);
-        this.n = n;
         _findUnion = new StarFindUnion(n);
-        THREAD_NUM = threadNum;
+        _threadNum = threadNum;
     }
 
-    public (IEnumerable<Edge<int>> edges, long cost) GetMST()
+    public ThreadBoruvkaMST(StarFindUnion findUnion, int threadNum) 
+    {
+        _findUnion = findUnion ?? throw new ArgumentNullException(nameof(findUnion));
+        _threadNum = threadNum;
+    }
+    
+    public (IEnumerable<Edge<int>> edges, long cost) GetMST(List<List<Pair<Edge<int>, long>>> adj, int n)
     {
         if(n < 2)
-            return (Enumerable.Empty<Edge<int>>(), 0);
-        success = false;
-        resultTree = new List<Edge<int>>();
-        cost = 0 ;
-        _list = new List<Pair<Edge<int>, long>>();
-        for(int k=0;k<n;k++)
-            _list.Add(new Pair<Edge<int>, long>(new Edge<int>(-1,-1),-1));
-
-        var stopwatch = new Stopwatch();
-        stopwatch.Start();
-        Thread[] threads = new Thread[THREAD_NUM];
-        Barrier inBarrier = new Barrier(THREAD_NUM, (e) => isEdge = false);
-        Barrier outBarrier = new Barrier(THREAD_NUM, (b) => success = !isEdge);
-        Barrier midBarrier = new Barrier(THREAD_NUM);
-        for(int k=0;k<THREAD_NUM;k++) 
+            return ([], 0);
+        
+        var success = false;
+        List<Edge<int>> resultTree = [];
+        long cost = 0 ;
+        List<Pair<Edge<int>, long>> list = [];
+        
+        for (var k = 0; k < n; k++)
+            list.Add(new Pair<Edge<int>, long>(new Edge<int>(-1,-1),-1));
+        
+        var isEdge = false;
+        var threads = new Thread[_threadNum];
+        var inBarrier = new Barrier(_threadNum, (_) => isEdge = false);
+        var outBarrier = new Barrier(_threadNum, (_) => success = !isEdge);
+        var midBarrier = new Barrier(_threadNum);
+        
+        for (var k = 0; k < _threadNum; k++) 
         {
-            int specInt = k;
-            threads[k] = new Thread(() => ThreadFunction(specInt, inBarrier, outBarrier, midBarrier));
+            var specInt = k;
+            threads[k] = new Thread(() => ThreadFunction(adj, list, resultTree, n, specInt, inBarrier,
+                outBarrier, midBarrier, ref cost, ref isEdge, ref success));
         }
+        
         foreach (var thread in threads)
             thread.Start();
         foreach (var thread in threads)
             thread.Join();
-        stopwatch.Stop();
         return (resultTree, cost);
     }
 
-    private void ThreadFunction(int threadId, Barrier inBar, Barrier outBar, Barrier midBar) 
+    private void ThreadFunction(List<List<Pair<Edge<int>, long>>> adj, List<Pair<Edge<int>, long>> list,
+        List<Edge<int>> resultTree, int n, int threadId, Barrier inBar, Barrier outBar, Barrier midBar,
+        ref long cost, ref bool isEdge, ref bool succeed) 
     {
         while(true)
         {
             inBar.SignalAndWait();
-            for(int k = threadId; k<n;k+=THREAD_NUM)
-                ConsiderVertex(k);
+            for (var k = threadId; k < n; k += _threadNum)
+                ConsiderVertex(adj, list, k, ref isEdge);
+            
             outBar.SignalAndWait();
-            if(success)
+            if(succeed)
                 break;
-            for(int k=threadId;k<n;k+=THREAD_NUM) 
+            
+            for (var k = threadId; k < n; k += _threadNum)
             {
-                if(_findUnion.Find(k) == k) 
+                if (_findUnion.Find(k) != k) 
+                    continue;
+                
+                var members = _findUnion.GetMembers(k);
+                var min = k;
+                foreach (var member in members.Where(member => list[member] is not null))
                 {
-                    var members = _findUnion.GetMembers(k);
-                    var min = k;
-                    foreach(var member in members)
+                    if(list[min] is null || list[min].Second > list[member].Second)
                     {
-                        if(_list[member] is null)
-                            continue;
-                        if(_list[min] is null || _list[min].Second > _list[member].Second)
-                        {
-                            _list[min] = null;
-                            min = member;
-                        }
-                        else if(min != member)
-                            _list[member] = null;
+                        list[min] = null;
+                        min = member;
                     }
+                    else if(min != member)
+                        list[member] = null;
                 }
             }
+            
             midBar.SignalAndWait();
-            for(int k=threadId;k<n;k+=THREAD_NUM) 
+            
+            for (var k = threadId; k < n; k += _threadNum) 
             {
-                if(_list[k] is null)
+                if(list[k] is null)
                     continue;
-                MergeComponents(_list[k]);
-                _list[k] = null;
+                
+                MergeComponents(resultTree, list[k], ref cost);
+                list[k] = null;
             }
         }
     }
 
-    private void ConsiderVertex(int k) 
+    private void ConsiderVertex(List<List<Pair<Edge<int>, long>>> adj, List<Pair<Edge<int>, long>> list,
+        int k, ref bool isEdge) 
     {
-        var edge = FindMinimalEdgeForVertex(k);
+        var edge = FindMinimalEdgeForVertex(adj, k, ref isEdge);
         if(edge is null)
             return;
-        _list[k] = edge;
+        list[k] = edge;
     }
-    private Pair<Edge<int>, long> FindMinimalEdgeForVertex(int x) 
+    
+    private Pair<Edge<int>, long> FindMinimalEdgeForVertex(List<List<Pair<Edge<int>, long>>> adj, int x, ref bool isEdge) 
     {
-        var conectedNumber = _findUnion.Find(x); // for speed
-        // Where() here do not slow it down
-        var edges = _adj[x].Where(x => _findUnion.Find(x.First.Second) != conectedNumber).ToList();
-        if(edges is null || !edges.Any()) 
+        var connectedNumber = _findUnion.Find(x);
+        var edges = adj[x]
+            .Where(it => _findUnion.Find(it.First.Second) != connectedNumber)
+            .ToList();
+        
+        if(edges.Count == 0) 
         {
-            if(_adj[x].Any())
-                _adj[x] = new();
+            if(adj[x].Count != 0)
+                adj[x] = [];
             return null;
         }
+        
         isEdge = true;
-        _adj[x] = edges;
+        adj[x] = edges;
         return FindMinimalEdge(edges);     
     }
 
-    private Pair<Edge<int>, long> FindMinimalEdge(IEnumerable<Pair<Edge<int>, long>> edges) 
+    private static Pair<Edge<int>, long> FindMinimalEdge(IEnumerable<Pair<Edge<int>, long>> edges) 
         => edges.Aggregate((prev, next) => prev.Second > next.Second ? next : prev);
 
-    private void MergeComponents(Pair<Edge<int>, long> x) 
+    private void MergeComponents(List<Edge<int>> resultTree, Pair<Edge<int>, long> x, ref long cost) 
     {
-        // Tu jest problem z tym lockiem ale nie moge znalesc zadnego opisu bez compare exchange albo locka
         lock(_findUnion) 
         {
             var firstIdx = _findUnion.Find(x.First.First);

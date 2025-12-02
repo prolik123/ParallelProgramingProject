@@ -1,19 +1,21 @@
-﻿
-// 1 = fileName, 2 - minN, 3 - maxN, 4 - minM, 5 - maxM, 6 - maxCost
+﻿using System;
+using System.IO;
+using System.Linq;
+using TestsGenerator;
+
 var rand = new Random();
-using (StreamWriter writer = new StreamWriter(Path.Combine(Environment.CurrentDirectory, args[1])))
+var fileName = args[1];
+var minN = int.Parse(args[2]);
+var maxN = int.Parse(args[3]);
+var minM = int.Parse(args[4]);
+var maxM = int.Parse(args[5]);
+var maxCost = int.Parse(args[6]);
+
+using var writer = new StreamWriter(Path.Combine(Environment.CurrentDirectory, fileName));
+
+var genResult = new TestCasesGenerator().Generate(minN, maxN, minM, maxM, maxCost);
+writer.WriteLine($"{genResult.n} {genResult.m}");
+foreach (var edge in genResult.edges.SelectMany(list => list.Where(edge => edge.u <= edge.v)))
 {
-    var genResult = new TestCasesGenerator().Generate(int.Parse(args[2]),
-        int.Parse(args[3]), int.Parse(args[4]), int.Parse(args[5]), int.Parse(args[6]));
-    writer.WriteLine($"{genResult.n} {genResult.m}");
-    foreach(var list in genResult.edges) {
-        foreach(var edge in list) {
-            if(edge.u > edge.v)
-                continue;
-            if(rand.Next(0,2) == 0)
-                writer.WriteLine($"{edge.u} {edge.v} {edge.cost}");
-            else
-                writer.WriteLine($"{edge.v} {edge.u} {edge.cost}");
-        }
-    }
+    writer.WriteLine(rand.Next(0, 2) == 0 ? $"{edge.u} {edge.v} {edge.cost}" : $"{edge.v} {edge.u} {edge.cost}");
 }

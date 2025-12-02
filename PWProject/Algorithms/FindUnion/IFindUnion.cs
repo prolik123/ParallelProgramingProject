@@ -1,7 +1,7 @@
-namespace Algorithms.FindUnion;
+namespace PWProject.Algorithms.FindUnion;
 
 public interface IFindUnion
 {
-    public int Find(int x);
-    public void Union(int x, int y);
+    int Find(int x);
+    void Union(int x, int y);
 }

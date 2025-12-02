@@ -1,14 +1,18 @@
  
-namespace Algorithms.FindUnion;
+using System.Linq;
+
+namespace PWProject.Algorithms.FindUnion;
 
 // find union in O(n*a(n)) time where a(n) is inverse ackermann function
 
 public class FindUnionStructure : IFindUnion
 {
-    private Component[] _list;
+    private readonly Component[] _list;
 
-    public FindUnionStructure(int n) => _list = Enumerable.Range(0, n)
-        .Select(x => new Component(x)).ToArray();
+    public FindUnionStructure(int n)
+    {
+        _list = Enumerable.Range(0, n).Select(x => new Component(x)).ToArray();
+    }
 
     public int Find(int x) => FindInternal(x).Element;
 
@@ -27,27 +31,28 @@ public class FindUnionStructure : IFindUnion
     private class Component 
     {
         public int Element { get; set; }
-        private int rank { get; set; }
+        
+        private int _rank { get; set; }
 
         public Component(int element) 
         {
             Element = element;
-            rank = 0;
+            _rank = 0;
         }
 
         public void MergeWith(Component component) 
         {
             if(Element == component.Element)
                 return;
-            if(rank > component.rank)
+            if(_rank > component._rank)
                 component.Element = Element;
-            else if(rank < component.rank)
+            else if(_rank < component._rank)
                 Element = component.Element;
             else 
             {
                 Element = component.Element;
-                rank++;
-                component.rank++;
+                _rank++;
+                component._rank++;
             }
         }
     }

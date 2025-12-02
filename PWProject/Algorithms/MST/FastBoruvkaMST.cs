@@ -1,76 +1,84 @@
-
-using DataStructures;
-using Algorithms.FindUnion;
+using System;
 using System.Collections.Concurrent;
-using System.Diagnostics;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using PWProject.Algorithms.FindUnion;
+using PWProject.DataStructures;
 
-namespace Algorithms.MST;
+namespace PWProject.Algorithms.MST;
 
 public class FastBoruvkaMST : IMST
 {
-    private IFindUnion _findUnion;
-    private List<List<Pair<Edge<int>, long>>> _adj;
-    private int n;
-    private int MAX_THREADS;
+    private readonly IFindUnion _findUnion;
+    private readonly int _maxThreads;
 
-    public FastBoruvkaMST(List<List<Pair<Edge<int>, long>>> adj, int n, int threads) 
+    public FastBoruvkaMST(int n, int threads) 
     {
-        _adj = new (adj);
-        this.n = n;
         _findUnion = new FindUnionStructure(n);
-        MAX_THREADS = threads;
+        _maxThreads = threads;
+    }
+    
+    public FastBoruvkaMST(IFindUnion findUnion, int threads) 
+    {
+        _findUnion = findUnion ?? throw new ArgumentNullException(nameof(findUnion));
+        _maxThreads = threads;
     }
 
-    public (IEnumerable<Edge<int>> edges, long cost) GetMST()
+    public (IEnumerable<Edge<int>> edges, long cost) GetMST(List<List<Pair<Edge<int>, long>>> adjParam, int n)
     {
+        var adj = new List<List<Pair<Edge<int>, long>>>(adjParam);
         if(n < 2)
-            return (Enumerable.Empty<Edge<int>>(), 0);
+            return ([], 0);
+        
         var resultTree = new ConcurrentBag<Edge<int>>();
         long cost = 0 ;
-        var stopwatch = new Stopwatch();
-        stopwatch.Start();
         while(true)
         {
-            ConcurrentDictionary<int, Pair<Edge<int>, long>> dict = new ConcurrentDictionary<int, Pair<Edge<int>, long>>();
-            Parallel.For(0, n, new ParallelOptions { MaxDegreeOfParallelism = MAX_THREADS}, k => ConsiderVertex(k, dict));
+            var dict = new ConcurrentDictionary<int, Pair<Edge<int>, long>>();
+            var parallelOptions =  new ParallelOptions { MaxDegreeOfParallelism = _maxThreads };
+            Parallel.For(0, n, parallelOptions, k => ConsiderVertex(adj, k, dict));
             if(dict.Count < 2)
                 break;
             dict.AsParallel().ForAll(x => MergeComponents(x, ref cost, resultTree));
         }
-        stopwatch.Stop();
         return (resultTree, cost);
     }
 
-    private void ConsiderVertex(int k, ConcurrentDictionary<int, Pair<Edge<int>, long>> dict) 
+    private void ConsiderVertex(List<List<Pair<Edge<int>, long>>> adj, int k, ConcurrentDictionary<int, Pair<Edge<int>, long>> dict) 
     {
-        var edge = FindMinimalEdgeForVertex(k);
+        var edge = FindMinimalEdgeForVertex(adj, k);
         if(edge is null)
             return;
         AddOrUpdate(dict, _findUnion.Find(k), edge);
     }
-    private Pair<Edge<int>, long> FindMinimalEdgeForVertex(int x) 
+    private Pair<Edge<int>, long> FindMinimalEdgeForVertex(List<List<Pair<Edge<int>, long>>> adj, int x) 
     {
-        var conectedNumber = _findUnion.Find(x); // for speed
-        // Where() here do not slow it down
-        var edges = _adj[x].Where(x => _findUnion.Find(x.First.Second) != conectedNumber).ToList();
-        if(edges is null || !edges.Any())
+        var connectedNumber = _findUnion.Find(x);
+        
+        var edges = adj[x]
+            .Where(it => _findUnion.Find(it.First.Second) != connectedNumber)
+            .ToList();
+        
+        if(edges.Count == 0)
             return null;
-        _adj[x] = edges;
+        adj[x] = edges;
         return FindMinimalEdge(edges);     
     }
 
-    private Pair<Edge<int>, long> FindMinimalEdge(IEnumerable<Pair<Edge<int>, long>> edges) 
+    private static Pair<Edge<int>, long> FindMinimalEdge(IEnumerable<Pair<Edge<int>, long>> edges) 
         => edges.Aggregate((prev, next) => prev.Second > next.Second ? next : prev);
 
-    private void AddOrUpdate(ConcurrentDictionary<int, Pair<Edge<int>, long>> dict, int idx, Pair<Edge<int>, long> value)
+    private static void AddOrUpdate(ConcurrentDictionary<int, Pair<Edge<int>, long>> dict, int idx, Pair<Edge<int>, long> value)
     {
-        dict.AddOrUpdate(idx, value, (x, y) => Swapper(y, value));
+        dict.AddOrUpdate(idx, value, (_, y) => Swapper(y, value));
     }
 
-    private Pair<Edge<int>, long> Swapper(Pair<Edge<int>, long> a, Pair<Edge<int>, long> b) => a.Second > b.Second ? b : a;
+    private static Pair<Edge<int>, long> Swapper(Pair<Edge<int>, long> a, Pair<Edge<int>, long> b) => a.Second > b.Second ? b : a;
+    
     private void MergeComponents(KeyValuePair<int, Pair<Edge<int>, long>> x, ref long cost, ConcurrentBag<Edge<int>> resultTree) 
     {
-        // Tu jest problem z tym lockiem
         lock(_findUnion) 
         {
             var firstIdx = _findUnion.Find(x.Value.First.First);
@@ -82,5 +90,4 @@ public class FastBoruvkaMST : IMST
         resultTree.Add(x.Value.First);
         Interlocked.Add(ref cost, x.Value.Second);
     }
-    
 }

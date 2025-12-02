@@ -1,7 +1,8 @@
-using DataStructures;
+using System.Collections.Generic;
+using PWProject.DataStructures;
 
-namespace Algorithms.MST;
+namespace PWProject.Algorithms.MST;
 public interface IMST 
 {
-    public (IEnumerable<Edge<int>> edges, long cost) GetMST();
+    public (IEnumerable<Edge<int>> edges, long cost) GetMST(List<List<Pair<Edge<int>, long>>> adj, int n);
 }

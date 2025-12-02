@@ -1,8 +1,8 @@
 
-namespace DataStructures;
+namespace PWProject.DataStructures;
 
-public class Pair<T,S>(T first = default, S second = default)
+public record Pair<T,TS>(T First = default, TS Second = default)
 {
-    public T First { get; set; } = first;
-    public S Second { get; set; } = second;
+    public T First { get; } = First;
+    public TS Second { get; } = Second;
 }

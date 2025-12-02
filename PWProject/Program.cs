@@ -1,56 +1,54 @@
-﻿using System.Diagnostics;
-using Algorithms.MST;
-using DataStructures;
+﻿using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Threading;
+using PWProject.Algorithms.MST;
+using PWProject.DataStructures;
 
-var firstLine = Console.ReadLine().Split();
-int n = int.Parse(firstLine[0]);
-int m = int.Parse(firstLine[1]);
-var edges = new List<List<Pair<Edge<int>, long>>>();
-for(int k=0;k<n;k++)
-    edges.Add(new List<Pair<Edge<int>, long>>());
+var firstLine = Console.ReadLine()?.Split() ?? throw new Exception("Invalid program input");
+var n = int.Parse(firstLine[0]);
+var m = int.Parse(firstLine[1]);
+var edges = new List<List<Pair<Edge<int>, long>>>(n);
 
-for(int k=0;k<m;k++) 
+for (var k = 0; k < m; k++)
 {
-    var line = Console.ReadLine().Split();
+    const string invalidInputMessage = "Invalid program input, expect m lines with properly described edges";
+    var line = Console.ReadLine()?.Split() ?? throw new Exception(invalidInputMessage);
+    
     var u = int.Parse(line[0]);
     var v = int.Parse(line[1]);
     var cost = long.Parse(line[2]);
     edges[u].Add(new Pair<Edge<int>,long>(new Edge<int>(u,v), cost));
     edges[v].Add(new Pair<Edge<int>,long>(new Edge<int>(v,u), cost));
 }
-var ok = ThreadPool.SetMinThreads(1, 1);
 
-for(int k=0;k<5;k++) {
+
+const int numOfTries = 5;
+
+for (var k = 0; k < numOfTries; k++)
+{
     IMST mstSolver;
-
-    if(args.Length > 1) 
+    if (args.Length <= 1)
+        mstSolver = new BoruvkaMST(n);
+    else
     {
-        mstSolver = args[1] switch 
+        mstSolver = args[1] switch
         {
-            "parallel" => new ParallelBoruvkaMST(edges, n, 1 << k),
-            "test" => new MstTest(edges, n),
-            "threads" => new ThreadBoruvkaMST(edges, n, 1 << k),
-            "fast" => new FastBoruvkaMST(edges, n, 1 << k),
-            _ =>  new BoruvkaMST(edges, n)
+            "parallel" => new ParallelBoruvkaMST(n, 1 << k),
+            "test" => new MstTest(),
+            "threads" => new ThreadBoruvkaMST(n, 1 << k),
+            "fast" => new FastBoruvkaMST(n, 1 << k),
+            _ => new BoruvkaMST(n)
         };
     }
-    else
-        mstSolver = new BoruvkaMST(edges, n);
-    var maxOk =ThreadPool.SetMaxThreads(1 << k, 1 << k);
-    var minOk = ThreadPool.SetMinThreads(1 << k, 1 << k);
+
+    ThreadPool.SetMaxThreads(1 << k, 1 << k);
+    ThreadPool.SetMinThreads(1 << k, 1 << k);
     var stopwatch = new Stopwatch();
 
     stopwatch.Start();
-    var result = mstSolver.GetMST();
+    var result = mstSolver.GetMST(edges, n);
     stopwatch.Stop();
     Console.Error.WriteLine($"Time: {stopwatch.ElapsedMilliseconds} ms for {1 << k} threads");
     Console.WriteLine(result.cost);
 }
-
-
-/*
-foreach(var edge in result.edges) 
-{
-    Console.WriteLine($"{edge.First} {edge.Second}");
-}
-*/
